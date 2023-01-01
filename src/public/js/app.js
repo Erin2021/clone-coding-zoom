@@ -65,7 +65,7 @@ function addMessage(message){
 
 function handleMessageSubmit(event){
     event.preventDefault();
-    const input = room.querySelector("input");
+    const input = room.querySelector("#msg input");
     const value = input.value;
     socket.emit("new_message", value, roomName,()=>{
         addMessage(`You:${value}`);
@@ -73,13 +73,24 @@ function handleMessageSubmit(event){
     input.value ="";
 }
 
+function handleNicknameSubmit(event){
+    event.preventDefault();
+    const input=room.querySelector("#name input");
+    const value=input.value;
+    socket.emit("nickname",value);
+    input.value="";
+}
+
 function showRoom(){
     welcome.hidden = true;
     room.hidden = false;
     const h3 = room.querySelector("h3");
     h3.innerText = `Room ${roomName}`;
-    const form = room.querySelector("form");
-    form.addEventListener("submit",handleMessageSubmit);
+
+    const msgform = room.querySelector("#msg");
+    const nameform = room.querySelector("#name");
+    msgform.addEventListener("submit",handleMessageSubmit);
+    nameform.addEventListener("submit",handleNicknameSubmit);
 }
 
 function handleRoomSubmit(event){
@@ -94,12 +105,31 @@ function handleRoomSubmit(event){
 }
 
 form.addEventListener("submit",handleRoomSubmit);
-socket.on("welcome",()=>{
-    addMessage("someone joined!");
+
+socket.on("welcome",(usernickname, newCount)=>{
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName}(${newCount})`
+    addMessage(`${usernickname} arrived!`);
 })
-socket.on("bye",()=>{
-    addMessage("someone left ㅠㅠ")
+socket.on("bye",(usernickname, newCount)=>{
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName}(${newCount})`
+    addMessage(`${usernickname} left ㅠㅠ`)
 }) 
 socket.on("new_message",(msg)=>{
     addMessage(msg);
+})
+
+socket.on("room_change",(rooms)=>{//rooms==server's publicrooms
+    // console.log("현존하는방"+rooms);
+    const roomList = welcome.querySelector("ul");
+    roomList.innerHTML="";//room_change 열릴때마다 리스트 초기화=>리스트중복방지
+    if(rooms.length===0){//애초에 리스트==0일시,그냥 중지
+        return;
+    }
+    rooms.forEach((rooms)=>{//publicrooms list돌려서 추가한다
+        const li = document.createElement("li");
+        li.innerText=rooms;
+        roomList.append(li);
+    })
 })
